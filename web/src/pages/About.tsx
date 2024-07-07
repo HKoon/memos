@@ -22,6 +22,8 @@ const About = () => {
           <Link underline="always" href="https://linkin.love/" target="_blank">
               Website
           </Link>
+          <Icon.Dot className="w-4 h-auto opacity-60" />
+          <p className="text-base font-regular">Powered by Memos</p>
         </div>
       </div>
     </section>

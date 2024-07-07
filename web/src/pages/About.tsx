@@ -9,7 +9,7 @@ const About = () => {
       <div className="w-full px-4 sm:px-6">
         <div className="w-full shadow flex flex-col justify-start items-start p-4 rounded-xl bg-white dark:bg-zinc-800 text-black dark:text-gray-300">
           <p className="text-base font-semibold">
-            💭Welcome to the Linkin Love Bulletin Board!💭
+            💭Welcome to the Linkin Love Bulletin Board!
           </p>
           <p className="text-base font-regular">Here, you'll find regular updates on our development progress.</p>
           <p className="text-base font-regular">We encourage everyone to join the conversation and share your thoughts!</p>
@@ -22,7 +22,7 @@ const About = () => {
                 Website
             </Link>
             <Icon.Dot className="w-4 h-auto opacity-60" />
-            <p className="text-base font-regular">Powered by Memos</p>
+            <p className="text-base font-regular">Powered by Memos x LinkinLove</p>
           </div>
         </div>
       </div>

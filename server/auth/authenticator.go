@@ -185,7 +185,7 @@ func (a *Authenticator) AuthenticateByLinkinToken(ctx context.Context, authHeade
 
 	// Call Linkin API to validate token
 	// Assuming Linkin server is running on localhost:8888
-	req, err := http.NewRequestWithContext(ctx, "GET", "http://127.0.0.1:8888/api/user/v1/info", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", "http://linkin.love/api/user/v1/info", nil)
 	if err != nil {
 		return nil, err
 	}

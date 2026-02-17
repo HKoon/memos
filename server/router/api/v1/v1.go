@@ -118,10 +118,34 @@ func (s *APIV1Service) RegisterGateway(ctx context.Context, echoServer *echo.Ech
 	if err := v1pb.RegisterIdentityProviderServiceHandlerServer(ctx, gwMux, s); err != nil {
 		return err
 	}
+
 	gwGroup := echoServer.Group("")
 	gwGroup.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodDelete, http.MethodOptions},
+		AllowHeaders:     []string{"*"},
+		AllowCredentials: true,
 	}))
+
+	// Register manual compatibility route for /api/v1/users/{id}/memos
+	gwGroup.GET("/api/v1/users/:id/memos", func(c echo.Context) error {
+		userID := c.Param("id")
+
+		// Construct filter string: creator == 'users/{id}'
+		filter := "creator == 'users/" + userID + "'"
+
+		// Modify the request URL to point to /api/v1/memos with the filter
+		req := c.Request()
+		q := req.URL.Query()
+		q.Set("filter", filter)
+		req.URL.RawQuery = q.Encode()
+		req.URL.Path = "/api/v1/memos"
+
+		// Use the existing gateway handler to process the modified request
+		handler := echo.WrapHandler(gwMux)
+		return handler(c)
+	})
+
 	handler := echo.WrapHandler(gwMux)
 
 	gwGroup.Any("/api/v1/*", handler)

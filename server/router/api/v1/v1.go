@@ -121,12 +121,7 @@ func (s *APIV1Service) RegisterGateway(ctx context.Context, echoServer *echo.Ech
 
 	gwGroup := echoServer.Group("")
 	gwGroup.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		UnsafeAllowOriginFunc: func(_ *echo.Context, origin string) (string, bool, error) {
-			return origin, true, nil
-		},
-		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodDelete, http.MethodOptions},
-		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization, echo.HeaderXRequestedWith},
-		AllowCredentials: true,
+		AllowOrigins: []string{"*"},
 	}))
 
 	// Register manual compatibility route for /api/v1/users/{id}/memos

@@ -121,15 +121,18 @@ func (s *APIV1Service) RegisterGateway(ctx context.Context, echoServer *echo.Ech
 
 	gwGroup := echoServer.Group("")
 	gwGroup.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodDelete, http.MethodOptions},
+		AllowHeaders:     []string{"*"},
+		AllowCredentials: true,
 	}))
 
 	// Register manual compatibility route for /api/v1/users/{id}/memos
 	gwGroup.GET("/api/v1/users/:id/memos", func(c *echo.Context) error {
 		userID := c.Param("id")
 
-		// Construct filter string: creator == 'users/{id}'
-		filter := "creator == 'users/" + userID + "'"
+		// Construct filter string: creator_id == {id}
+		filter := "creator_id == " + userID
 
 		// Modify the request URL to point to /api/v1/memos with the filter
 		req := c.Request()

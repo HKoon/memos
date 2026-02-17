@@ -7,13 +7,11 @@ import { useUserLocale } from "./hooks/useUserLocale";
 import { useUserTheme } from "./hooks/useUserTheme";
 import { cleanupExpiredOAuthState } from "./utils/oauth";
 import { setAccessToken } from "./auth-state";
-import useCurrentUser from "./hooks/useCurrentUser";
 
 const App = () => {
   const navigateTo = useNavigateTo();
   const { profile: instanceProfile, generalSetting: instanceGeneralSetting } = useInstance();
   const [searchParams, setSearchParams] = useSearchParams();
-  const currentUser = useCurrentUser();
 
   // Handle external token from query parameter (e.g. from Linkin integration)
   const token = searchParams.get("token");
@@ -25,8 +23,6 @@ const App = () => {
       // Remove token from URL
       searchParams.delete("token");
       setSearchParams(searchParams);
-      // Force reload to apply token
-      window.location.reload();
     }
   }, [token, searchParams, setSearchParams]);
 
@@ -41,10 +37,10 @@ const App = () => {
 
   // Redirect to sign up page if instance not initialized (no admin account exists yet)
   useEffect(() => {
-    if (!instanceProfile.admin && !currentUser && !token) {
+    if (!instanceProfile.admin) {
       navigateTo("/auth/signup");
     }
-  }, [instanceProfile.admin, navigateTo, currentUser, token]);
+  }, [instanceProfile.admin, navigateTo]);
 
   useEffect(() => {
     if (instanceGeneralSetting.additionalStyle) {

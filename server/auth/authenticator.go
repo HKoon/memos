@@ -3,8 +3,10 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -184,23 +186,30 @@ func (a *Authenticator) AuthenticateByLinkinToken(ctx context.Context, authHeade
 	}
 
 	// Call Linkin API to validate token
-	// Assuming Linkin server is running on localhost:8888
-	req, err := http.NewRequestWithContext(ctx, "GET", "http://linkin.love/api/user/v1/info", nil)
+	// Default to linkin.love, can be overridden by LINKIN_API_URL env var
+	linkinURL := os.Getenv("LINKIN_API_URL")
+	if linkinURL == "" {
+		linkinURL = "https://linkin.love"
+	}
+	apiURL := fmt.Sprintf("%s/api/user/v1/info", linkinURL)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to create request")
 	}
 	req.Header.Set("Authorization", authHeader)
 
-	client := &http.Client{Timeout: 2 * time.Second}
+	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		// Linkin server might be unreachable
+		slog.Warn("failed to request linkin server", "url", apiURL, "error", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("linkin auth failed")
+		slog.Warn("linkin auth failed", "status", resp.StatusCode)
+		return nil, errors.Errorf("linkin auth failed with status %d", resp.StatusCode)
 	}
 
 	var linkinUser struct {
@@ -208,10 +217,12 @@ func (a *Authenticator) AuthenticateByLinkinToken(ctx context.Context, authHeade
 		Username string `json:"username"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&linkinUser); err != nil {
+		slog.Warn("failed to decode linkin response", "error", err)
 		return nil, err
 	}
 
 	if linkinUser.Username == "" {
+		slog.Warn("linkin user invalid", "uid", linkinUser.Uid)
 		return nil, errors.New("linkin user invalid")
 	}
 
@@ -237,8 +248,10 @@ func (a *Authenticator) AuthenticateByLinkinToken(ctx context.Context, authHeade
 	}
 	createdUser, err := a.store.CreateUser(ctx, newUser)
 	if err != nil {
+		slog.Error("failed to create shadow user", "username", linkinUser.Username, "error", err)
 		return nil, err
 	}
 
+	slog.Info("created shadow user for linkin account", "username", linkinUser.Username)
 	return createdUser, nil
 }

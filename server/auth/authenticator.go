@@ -140,6 +140,12 @@ type AuthResult struct {
 func (a *Authenticator) Authenticate(ctx context.Context, authHeader string) *AuthResult {
 	token := ExtractBearerToken(authHeader)
 
+	if token != "" {
+		slog.Info("authenticating token", "token_length", len(token))
+	} else {
+		slog.Info("no token in auth header", "header", authHeader)
+	}
+
 	// Try Access Token V2 (stateless)
 	if token != "" && !strings.HasPrefix(token, PersonalAccessTokenPrefix) {
 		claims, err := a.AuthenticateByAccessTokenV2(token)
@@ -167,12 +173,20 @@ func (a *Authenticator) Authenticate(ctx context.Context, authHeader string) *Au
 
 	// Try Linkin Token (Remote validation)
 	if token != "" && !strings.HasPrefix(token, PersonalAccessTokenPrefix) {
+		tokenPreview := token
+		if len(token) > 10 {
+			tokenPreview = token[:10]
+		}
+		slog.Info("attempting linkin token auth", "token_prefix", tokenPreview)
 		user, err := a.AuthenticateByLinkinToken(ctx, authHeader)
 		if err == nil && user != nil {
+			slog.Info("linkin auth success", "username", user.Username)
 			return &AuthResult{
 				User:        user,
 				AccessToken: token,
 			}
+		} else {
+			slog.Warn("linkin auth failed", "error", err)
 		}
 	}
 

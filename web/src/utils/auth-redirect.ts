@@ -19,6 +19,9 @@ function isPrivateRoute(path: string): boolean {
 }
 
 export function redirectOnAuthFailure(): void {
+  // Always clear access token on auth failure to prevent infinite loops
+  clearAccessToken();
+
   const currentPath = window.location.pathname;
 
   // Don't redirect if it's a public route
@@ -29,7 +32,6 @@ export function redirectOnAuthFailure(): void {
   // Always redirect to auth page on auth failure - the user's session expired
   // and they should re-authenticate rather than being sent to explore.
   if (isPrivateRoute(currentPath)) {
-    clearAccessToken();
     window.location.replace(ROUTES.AUTH);
   }
 }

@@ -128,7 +128,7 @@ func (s *APIV1Service) RegisterGateway(ctx context.Context, echoServer *echo.Ech
 	}))
 
 	// Register manual compatibility route for /api/v1/users/{id}/memos
-	gwGroup.GET("/api/v1/users/:id/memos", func(c echo.Context) error {
+	gwGroup.GET("/api/v1/users/:id/memos", func(c *echo.Context) error {
 		userID := c.Param("id")
 
 		// Construct filter string: creator == 'users/{id}'

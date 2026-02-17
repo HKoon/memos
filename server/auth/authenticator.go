@@ -215,6 +215,7 @@ func (a *Authenticator) AuthenticateByLinkinToken(ctx context.Context, authHeade
 	var linkinUser struct {
 		Uid      string `json:"uid"`
 		Username string `json:"username"`
+		Avatar   string `json:"avatar"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&linkinUser); err != nil {
 		slog.Warn("failed to decode linkin response", "error", err)
@@ -245,6 +246,7 @@ func (a *Authenticator) AuthenticateByLinkinToken(ctx context.Context, authHeade
 		Email:        "",
 		PasswordHash: "", // Empty password hash disables password login
 		RowStatus:    store.Normal,
+		AvatarURL:    linkinUser.Avatar,
 	}
 	createdUser, err := a.store.CreateUser(ctx, newUser)
 	if err != nil {

@@ -253,6 +253,7 @@ func (a *Authenticator) AuthenticateByLinkinToken(ctx context.Context, authHeade
 	}
 
 	// Create user if not exists (Shadow Account)
+	currentTs := time.Now().Unix()
 	newUser := &store.User{
 		Username:     linkinUser.Username,
 		Nickname:     linkinUser.Username,
@@ -261,6 +262,8 @@ func (a *Authenticator) AuthenticateByLinkinToken(ctx context.Context, authHeade
 		PasswordHash: "", // Empty password hash disables password login
 		RowStatus:    store.Normal,
 		AvatarURL:    linkinUser.Avatar,
+		CreatedTs:    currentTs,
+		UpdatedTs:    currentTs,
 	}
 	createdUser, err := a.store.CreateUser(ctx, newUser)
 	if err != nil {

@@ -21,6 +21,13 @@ const SignIn = () => {
   const currentUser = useCurrentUser();
   const [identityProviderList, setIdentityProviderList] = useState<IdentityProvider[]>([]);
   const { generalSetting: instanceGeneralSetting } = useInstance();
+  const searchParams = new URLSearchParams(window.location.search);
+  const isNative = searchParams.get("native") === "true";
+
+  // Linkin Login Configuration
+  // TODO: Make this configurable via instance settings
+  const LINKIN_LOGIN_URL = "https://linkin.love/signin";
+  const ENABLE_LINKIN_LOGIN = true;
 
   // Redirect to root page if already signed in.
   useEffect(() => {
@@ -28,6 +35,15 @@ const SignIn = () => {
       window.location.href = Routes.ROOT;
     }
   }, [currentUser]);
+
+  // Redirect to Linkin login if enabled and not native mode
+  useEffect(() => {
+    if (ENABLE_LINKIN_LOGIN && !isNative && !currentUser) {
+      const callbackUrl = window.location.origin;
+      // Assume Linkin supports 'redirect' parameter
+      window.location.href = `${LINKIN_LOGIN_URL}?redirect=${encodeURIComponent(callbackUrl)}`;
+    }
+  }, [isNative, currentUser]);
 
   // Prepare identity provider list.
   useEffect(() => {

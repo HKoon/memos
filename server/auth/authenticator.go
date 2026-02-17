@@ -2,7 +2,9 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
+	"net/http"
 	"strings"
 	"time"
 
@@ -161,5 +163,82 @@ func (a *Authenticator) Authenticate(ctx context.Context, authHeader string) *Au
 		}
 	}
 
+	// Try Linkin Token (Remote validation)
+	if token != "" && !strings.HasPrefix(token, PersonalAccessTokenPrefix) {
+		user, err := a.AuthenticateByLinkinToken(ctx, authHeader)
+		if err == nil && user != nil {
+			return &AuthResult{
+				User:        user,
+				AccessToken: token,
+			}
+		}
+	}
+
 	return nil
+}
+
+// AuthenticateByLinkinToken validates a token against Linkin server.
+func (a *Authenticator) AuthenticateByLinkinToken(ctx context.Context, authHeader string) (*store.User, error) {
+	if authHeader == "" {
+		return nil, errors.New("empty auth header")
+	}
+
+	// Call Linkin API to validate token
+	// Assuming Linkin server is running on localhost:8888
+	req, err := http.NewRequestWithContext(ctx, "GET", "http://127.0.0.1:8888/api/user/v1/info", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", authHeader)
+
+	client := &http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		// Linkin server might be unreachable
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("linkin auth failed")
+	}
+
+	var linkinUser struct {
+		Uid      string `json:"uid"`
+		Username string `json:"username"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&linkinUser); err != nil {
+		return nil, err
+	}
+
+	if linkinUser.Username == "" {
+		return nil, errors.New("linkin user invalid")
+	}
+
+	// Find user in memos by username
+	// Note: We assume linkin usernames are unique and safe to map directly
+	user, err := a.store.GetUser(ctx, &store.FindUser{Username: &linkinUser.Username})
+	if err != nil {
+		return nil, err
+	}
+
+	if user != nil {
+		return user, nil
+	}
+
+	// Create user if not exists (Shadow Account)
+	newUser := &store.User{
+		Username:     linkinUser.Username,
+		Nickname:     linkinUser.Username,
+		Role:         store.RoleUser,
+		Email:        "",
+		PasswordHash: "", // Empty password hash disables password login
+		RowStatus:    store.Normal,
+	}
+	createdUser, err := a.store.CreateUser(ctx, newUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return createdUser, nil
 }

@@ -1,15 +1,30 @@
 import { useEffect } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useSearchParams } from "react-router-dom";
 import { useInstance } from "./contexts/InstanceContext";
 import { MemoFilterProvider } from "./contexts/MemoFilterContext";
 import useNavigateTo from "./hooks/useNavigateTo";
 import { useUserLocale } from "./hooks/useUserLocale";
 import { useUserTheme } from "./hooks/useUserTheme";
 import { cleanupExpiredOAuthState } from "./utils/oauth";
+import { setAccessToken } from "./auth-state";
 
 const App = () => {
   const navigateTo = useNavigateTo();
   const { profile: instanceProfile, generalSetting: instanceGeneralSetting } = useInstance();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Handle external token from query parameter (e.g. from Linkin integration)
+  const token = searchParams.get("token");
+  useEffect(() => {
+    if (token) {
+      // Set token with 24h expiry
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      setAccessToken(token, expiresAt);
+      // Remove token from URL
+      searchParams.delete("token");
+      setSearchParams(searchParams);
+    }
+  }, [token, searchParams, setSearchParams]);
 
   // Apply user preferences reactively
   useUserLocale();

@@ -36,14 +36,7 @@ const SignIn = () => {
     }
   }, [currentUser]);
 
-  // Redirect to Linkin login if enabled and not native mode
-  useEffect(() => {
-    if (ENABLE_LINKIN_LOGIN && !isNative && !currentUser) {
-      const callbackUrl = window.location.origin;
-      // Assume Linkin supports 'redirect' parameter
-      window.location.href = `${LINKIN_LOGIN_URL}?redirect=${encodeURIComponent(callbackUrl)}`;
-    }
-  }, [isNative, currentUser]);
+  // Removed automatic redirect to Linkin login to allow users to manually click the button and avoid losing the Memos page
 
   // Prepare identity provider list.
   useEffect(() => {
@@ -113,7 +106,7 @@ const SignIn = () => {
             </Link>
           </p>
         )}
-        {identityProviderList.length > 0 && (
+        {(identityProviderList.length > 0 || ENABLE_LINKIN_LOGIN) && (
           <>
             {!instanceGeneralSetting.disallowPasswordAuth && (
               <div className="relative my-4 w-full">
@@ -124,6 +117,18 @@ const SignIn = () => {
               </div>
             )}
             <div className="w-full flex flex-col space-y-2">
+              {ENABLE_LINKIN_LOGIN && (
+                <Button
+                  className="bg-background w-full"
+                  variant="outline"
+                  onClick={() => {
+                    const callbackUrl = window.location.origin;
+                    window.open(`${LINKIN_LOGIN_URL}?redirect=${encodeURIComponent(callbackUrl)}`, "_blank");
+                  }}
+                >
+                  Sign in with Linkin
+                </Button>
+              )}
               {identityProviderList.map((identityProvider) => (
                 <Button
                   className="bg-background w-full"

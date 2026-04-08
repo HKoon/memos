@@ -516,7 +516,16 @@ func (s *FileServerService) checkAttachmentPermission(ctx context.Context, c *ec
 // Authentication priority: Bearer token (Access Token V2 or PAT) > Refresh token cookie.
 func (s *FileServerService) getCurrentUser(ctx context.Context, c *echo.Context) (*store.User, error) {
 	// Try Bearer token authentication.
-	if authHeader := c.Request().Header.Get(echo.HeaderAuthorization); authHeader != "" {
+	authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
+	if authHeader == "" {
+		if cookie, err := c.Request().Cookie("Authorization"); err == nil {
+			authHeader = cookie.Value
+			if !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+				authHeader = "Bearer " + authHeader
+			}
+		}
+	}
+	if authHeader != "" {
 		if user, err := s.authenticateByBearerToken(ctx, authHeader); err == nil && user != nil {
 			return user, nil
 		}

@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"reflect"
 	"runtime/debug"
+	"strings"
 
 	"connectrpc.com/connect"
 	pkgerrors "github.com/pkg/errors"
@@ -214,6 +216,15 @@ func (in *AuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 		header := req.Header()
 		authHeader := header.Get("Authorization")
+		if authHeader == "" {
+			request := &http.Request{Header: header}
+			if cookie, err := request.Cookie("Authorization"); err == nil {
+				authHeader = cookie.Value
+				if !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+					authHeader = "Bearer " + authHeader
+				}
+			}
+		}
 
 		result := in.authenticator.Authenticate(ctx, authHeader)
 

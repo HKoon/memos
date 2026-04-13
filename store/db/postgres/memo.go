@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -25,15 +26,19 @@ func (d *DB) CreateMemo(ctx context.Context, create *store.Memo) (*store.Memo, e
 	}
 	args := []any{create.UID, create.CreatorID, create.Content, create.Visibility, payload}
 
-	// Add custom timestamps if provided
-	if create.CreatedTs != 0 {
-		fields = append(fields, "created_ts")
-		args = append(args, create.CreatedTs)
+	// Always explicitly set timestamps to avoid NULL from RETURNING with function-based DEFAULTs.
+	now := time.Now().Unix()
+	if create.CreatedTs == 0 {
+		create.CreatedTs = now
 	}
-	if create.UpdatedTs != 0 {
-		fields = append(fields, "updated_ts")
-		args = append(args, create.UpdatedTs)
+	fields = append(fields, "created_ts")
+	args = append(args, create.CreatedTs)
+
+	if create.UpdatedTs == 0 {
+		create.UpdatedTs = now
 	}
+	fields = append(fields, "updated_ts")
+	args = append(args, create.UpdatedTs)
 
 	stmt := "INSERT INTO memo (" + strings.Join(fields, ", ") + ") VALUES (" + placeholders(len(args)) + ") RETURNING id, created_ts, updated_ts, row_status"
 	if err := d.db.QueryRowContext(ctx, stmt, args...).Scan(
